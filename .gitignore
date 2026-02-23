@@ -1,0 +1,27 @@
+# Binários e arquivos temporários
+/tmp/
+mindbox-api
+main
+
+# Variáveis de ambiente (SENSÍVEL - NUNCA SUBIR)
+.env
+*.env
+
+# Dependências do Go
+vendor/
+
+# Logs
+*.log
+
+# Docker
+.docker/
+pgdata/
+
+# IDEs (VS Code / JetBrains)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Binários de testes
+*.test

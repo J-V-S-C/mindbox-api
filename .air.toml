@@ -1,0 +1,30 @@
+root = "."
+test_dir = ""
+tmp_dir = "tmp"
+
+[build]
+  # O comando de build aponta para o seu arquivo server.go
+  cmd = "go build -o ./tmp/main ./cmd/server/server.go"
+  # O binário que o Air vai executar
+  bin = "./tmp/main"
+  # O Air vai observar essas extensões
+  include_ext = ["go", "tpl", "tmpl", "html", "graphql", "graphqls", "yaml", "toml"]
+  # Ignora essas pastas para evitar loop infinito de rebuild
+  exclude_dir = ["assets", "tmp", "vendor", "test"]
+  # Tempo de espera após uma mudança para disparar o build (ms)
+  delay = 1000
+  # Se o hot reload não funcionar no Arch, mude para true
+  poll = true
+  poll_interval = 500
+
+[log]
+  time = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[screen]
+  clear_on_rebuild = true

@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:alpine
+    container_name: mindbox-db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+    networks:
+      - mindbox-net
+
+  migrate:
+    image: migrate/migrate
+    volumes:
+      - ./database/migrations:/migrations
+    networks:
+      - mindbox-net
+    # O segredo: ele conecta no DB e aplica os arquivos da pasta local /migrations
+    command:
+      - -path=/migrations/
+      - -database
+      - "postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable"
+      - up
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ${DOCKER_TARGET:-dev}
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - .:/app
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      PORT: ${PORT}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - mindbox-net
+
+networks:
+  mindbox-net:
+    driver: bridge
+
+volumes:
+  pgdata:

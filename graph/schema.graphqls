@@ -1,0 +1,67 @@
+scalar Time
+
+type Roadmap {
+  id: ID!
+  name: String!
+  description: String
+  categories: [Category!]!
+}
+
+type Category {
+  id: ID!
+  name: String!
+  description: String
+  lifetime: String!
+  roadmap: Roadmap!
+  tasks: [Task!]!
+}
+
+type Task {
+  id: ID!
+  name: String!
+  description: String
+  done: Boolean!
+  idDaily: Boolean!
+  lifetime: String
+  category: Category!
+}
+
+type Query {
+  roadmaps: [Roadmap!]!
+  categories: [Category!]!
+  tasks: [Task!]!
+  dailyTasks: [Task!]!
+  pendingTasks(categoryId: ID): [Task!]!
+}
+
+input NewRoadmap {
+  name: String!
+  description: String
+}
+
+input NewCategory {
+  name: String!
+  description: String
+  lifetime: String!
+  roadmapId: ID!
+}
+
+input NewTask {
+  name: String!
+  description: String
+  isDaily: Boolean!
+  lifetime: String
+  categoryId: ID!
+}
+
+type Mutation {
+  createRoadmap(input: NewRoadmap!): Roadmap!
+  createCategory(input: NewCategory!): Category!
+  createTask(input: NewTask!): Task!
+
+  toggleTaskDone(id: ID!): Task!
+
+  deleteRoadmap(id: ID!): Boolean!
+  deleteCategory(id: ID!): Boolean!
+  deleteTask(id: ID!): Boolean!
+}
