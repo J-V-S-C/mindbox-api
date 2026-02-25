@@ -56,14 +56,18 @@ type ComplexityRoot struct {
 		DeleteRoadmap  func(childComplexity int, id string) int
 		DeleteTask     func(childComplexity int, id string) int
 		ToggleTaskDone func(childComplexity int, id string) int
+		UpdateCategory func(childComplexity int, id string, input model.NewCategory) int
+		UpdateRoadmap  func(childComplexity int, id string, input model.NewRoadmap) int
+		UpdateTask     func(childComplexity int, id string, input model.NewTask) int
 	}
 
 	Query struct {
-		Categories   func(childComplexity int) int
-		DailyTasks   func(childComplexity int) int
-		PendingTasks func(childComplexity int, categoryID *string) int
-		Roadmaps     func(childComplexity int) int
-		Tasks        func(childComplexity int) int
+		Categories   func(childComplexity int, limit int, offset int) int
+		DailyTasks   func(childComplexity int, limit int, offset int) int
+		ExpiredTasks func(childComplexity int, limit int, offset int) int
+		PendingTasks func(childComplexity int, categoryID string, limit int, offset int) int
+		Roadmaps     func(childComplexity int, limit int, offset int) int
+		Tasks        func(childComplexity int, limit int, offset int) int
 	}
 
 	Roadmap struct {
@@ -78,7 +82,8 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		Done        func(childComplexity int) int
 		ID          func(childComplexity int) int
-		IDDaily     func(childComplexity int) int
+		IsDaily     func(childComplexity int) int
+		IsExpired   func(childComplexity int) int
 		Lifetime    func(childComplexity int) int
 		Name        func(childComplexity int) int
 	}
@@ -92,24 +97,26 @@ type MutationResolver interface {
 	CreateRoadmap(ctx context.Context, input model.NewRoadmap) (*model.Roadmap, error)
 	CreateCategory(ctx context.Context, input model.NewCategory) (*model.Category, error)
 	CreateTask(ctx context.Context, input model.NewTask) (*model.Task, error)
+	UpdateRoadmap(ctx context.Context, id string, input model.NewRoadmap) (*model.Roadmap, error)
+	UpdateCategory(ctx context.Context, id string, input model.NewCategory) (*model.Category, error)
+	UpdateTask(ctx context.Context, id string, input model.NewTask) (*model.Task, error)
 	ToggleTaskDone(ctx context.Context, id string) (*model.Task, error)
 	DeleteRoadmap(ctx context.Context, id string) (bool, error)
 	DeleteCategory(ctx context.Context, id string) (bool, error)
 	DeleteTask(ctx context.Context, id string) (bool, error)
 }
 type QueryResolver interface {
-	Roadmaps(ctx context.Context) ([]*model.Roadmap, error)
-	Categories(ctx context.Context) ([]*model.Category, error)
-	Tasks(ctx context.Context) ([]*model.Task, error)
-	DailyTasks(ctx context.Context) ([]*model.Task, error)
-	PendingTasks(ctx context.Context, categoryID *string) ([]*model.Task, error)
+	Roadmaps(ctx context.Context, limit int, offset int) ([]*model.Roadmap, error)
+	Categories(ctx context.Context, limit int, offset int) ([]*model.Category, error)
+	Tasks(ctx context.Context, limit int, offset int) ([]*model.Task, error)
+	DailyTasks(ctx context.Context, limit int, offset int) ([]*model.Task, error)
+	PendingTasks(ctx context.Context, categoryID string, limit int, offset int) ([]*model.Task, error)
+	ExpiredTasks(ctx context.Context, limit int, offset int) ([]*model.Task, error)
 }
 type RoadmapResolver interface {
 	Categories(ctx context.Context, obj *model.Roadmap) ([]*model.Category, error)
 }
 type TaskResolver interface {
-	IDDaily(ctx context.Context, obj *model.Task) (bool, error)
-
 	Category(ctx context.Context, obj *model.Task) (*model.Category, error)
 }
 
@@ -241,19 +248,73 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ToggleTaskDone(childComplexity, args["id"].(string)), true
+	case "Mutation.updateCategory":
+		if e.ComplexityRoot.Mutation.UpdateCategory == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateCategory_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateCategory(childComplexity, args["id"].(string), args["input"].(model.NewCategory)), true
+	case "Mutation.updateRoadmap":
+		if e.ComplexityRoot.Mutation.UpdateRoadmap == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateRoadmap_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateRoadmap(childComplexity, args["id"].(string), args["input"].(model.NewRoadmap)), true
+	case "Mutation.updateTask":
+		if e.ComplexityRoot.Mutation.UpdateTask == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateTask_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateTask(childComplexity, args["id"].(string), args["input"].(model.NewTask)), true
 
 	case "Query.categories":
 		if e.ComplexityRoot.Query.Categories == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Query.Categories(childComplexity), true
+		args, err := ec.field_Query_categories_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Categories(childComplexity, args["limit"].(int), args["offset"].(int)), true
 	case "Query.dailyTasks":
 		if e.ComplexityRoot.Query.DailyTasks == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Query.DailyTasks(childComplexity), true
+		args, err := ec.field_Query_dailyTasks_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.DailyTasks(childComplexity, args["limit"].(int), args["offset"].(int)), true
+	case "Query.expiredTasks":
+		if e.ComplexityRoot.Query.ExpiredTasks == nil {
+			break
+		}
+
+		args, err := ec.field_Query_expiredTasks_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.ExpiredTasks(childComplexity, args["limit"].(int), args["offset"].(int)), true
 
 	case "Query.pendingTasks":
 		if e.ComplexityRoot.Query.PendingTasks == nil {
@@ -265,19 +326,29 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Query.PendingTasks(childComplexity, args["categoryId"].(*string)), true
+		return e.ComplexityRoot.Query.PendingTasks(childComplexity, args["categoryId"].(string), args["limit"].(int), args["offset"].(int)), true
 	case "Query.roadmaps":
 		if e.ComplexityRoot.Query.Roadmaps == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Query.Roadmaps(childComplexity), true
+		args, err := ec.field_Query_roadmaps_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Roadmaps(childComplexity, args["limit"].(int), args["offset"].(int)), true
 	case "Query.tasks":
 		if e.ComplexityRoot.Query.Tasks == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Query.Tasks(childComplexity), true
+		args, err := ec.field_Query_tasks_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Tasks(childComplexity, args["limit"].(int), args["offset"].(int)), true
 
 	case "Roadmap.categories":
 		if e.ComplexityRoot.Roadmap.Categories == nil {
@@ -328,12 +399,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Task.ID(childComplexity), true
-	case "Task.idDaily":
-		if e.ComplexityRoot.Task.IDDaily == nil {
+	case "Task.isDaily":
+		if e.ComplexityRoot.Task.IsDaily == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Task.IDDaily(childComplexity), true
+		return e.ComplexityRoot.Task.IsDaily(childComplexity), true
+	case "Task.isExpired":
+		if e.ComplexityRoot.Task.IsExpired == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Task.IsExpired(childComplexity), true
 	case "Task.lifetime":
 		if e.ComplexityRoot.Task.Lifetime == nil {
 			break
@@ -529,6 +606,54 @@ func (ec *executionContext) field_Mutation_toggleTaskDone_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateCategory_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNNewCategory2githubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐNewCategory)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateRoadmap_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNNewRoadmap2githubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐNewRoadmap)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateTask_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNNewTask2githubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐNewTask)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -540,14 +665,104 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_categories_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_dailyTasks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_expiredTasks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_pendingTasks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "categoryId", ec.unmarshalOID2ᚖstring)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "categoryId", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
 	args["categoryId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_roadmaps_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_tasks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
 	return args, nil
 }
 
@@ -790,8 +1005,10 @@ func (ec *executionContext) fieldContext_Category_tasks(_ context.Context, field
 				return ec.fieldContext_Task_description(ctx, field)
 			case "done":
 				return ec.fieldContext_Task_done(ctx, field)
-			case "idDaily":
-				return ec.fieldContext_Task_idDaily(ctx, field)
+			case "isDaily":
+				return ec.fieldContext_Task_isDaily(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_Task_isExpired(ctx, field)
 			case "lifetime":
 				return ec.fieldContext_Task_lifetime(ctx, field)
 			case "category":
@@ -942,8 +1159,10 @@ func (ec *executionContext) fieldContext_Mutation_createTask(ctx context.Context
 				return ec.fieldContext_Task_description(ctx, field)
 			case "done":
 				return ec.fieldContext_Task_done(ctx, field)
-			case "idDaily":
-				return ec.fieldContext_Task_idDaily(ctx, field)
+			case "isDaily":
+				return ec.fieldContext_Task_isDaily(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_Task_isExpired(ctx, field)
 			case "lifetime":
 				return ec.fieldContext_Task_lifetime(ctx, field)
 			case "category":
@@ -960,6 +1179,171 @@ func (ec *executionContext) fieldContext_Mutation_createTask(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateRoadmap(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateRoadmap,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateRoadmap(ctx, fc.Args["id"].(string), fc.Args["input"].(model.NewRoadmap))
+		},
+		nil,
+		ec.marshalNRoadmap2ᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐRoadmap,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateRoadmap(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Roadmap_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Roadmap_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Roadmap_description(ctx, field)
+			case "categories":
+				return ec.fieldContext_Roadmap_categories(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Roadmap", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateRoadmap_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateCategory(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateCategory,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateCategory(ctx, fc.Args["id"].(string), fc.Args["input"].(model.NewCategory))
+		},
+		nil,
+		ec.marshalNCategory2ᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐCategory,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateCategory(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Category_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Category_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Category_description(ctx, field)
+			case "lifetime":
+				return ec.fieldContext_Category_lifetime(ctx, field)
+			case "roadmap":
+				return ec.fieldContext_Category_roadmap(ctx, field)
+			case "tasks":
+				return ec.fieldContext_Category_tasks(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Category", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateCategory_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateTask,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateTask(ctx, fc.Args["id"].(string), fc.Args["input"].(model.NewTask))
+		},
+		nil,
+		ec.marshalNTask2ᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐTask,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateTask(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Task_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Task_description(ctx, field)
+			case "done":
+				return ec.fieldContext_Task_done(ctx, field)
+			case "isDaily":
+				return ec.fieldContext_Task_isDaily(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_Task_isExpired(ctx, field)
+			case "lifetime":
+				return ec.fieldContext_Task_lifetime(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -999,8 +1383,10 @@ func (ec *executionContext) fieldContext_Mutation_toggleTaskDone(ctx context.Con
 				return ec.fieldContext_Task_description(ctx, field)
 			case "done":
 				return ec.fieldContext_Task_done(ctx, field)
-			case "idDaily":
-				return ec.fieldContext_Task_idDaily(ctx, field)
+			case "isDaily":
+				return ec.fieldContext_Task_isDaily(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_Task_isExpired(ctx, field)
 			case "lifetime":
 				return ec.fieldContext_Task_lifetime(ctx, field)
 			case "category":
@@ -1153,7 +1539,8 @@ func (ec *executionContext) _Query_roadmaps(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Query_roadmaps,
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().Roadmaps(ctx)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Roadmaps(ctx, fc.Args["limit"].(int), fc.Args["offset"].(int))
 		},
 		nil,
 		ec.marshalNRoadmap2ᚕᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐRoadmapᚄ,
@@ -1162,7 +1549,7 @@ func (ec *executionContext) _Query_roadmaps(ctx context.Context, field graphql.C
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_roadmaps(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_roadmaps(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -1182,6 +1569,17 @@ func (ec *executionContext) fieldContext_Query_roadmaps(_ context.Context, field
 			return nil, fmt.Errorf("no field named %q was found under type Roadmap", field.Name)
 		},
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_roadmaps_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
 	return fc, nil
 }
 
@@ -1192,7 +1590,8 @@ func (ec *executionContext) _Query_categories(ctx context.Context, field graphql
 		field,
 		ec.fieldContext_Query_categories,
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().Categories(ctx)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Categories(ctx, fc.Args["limit"].(int), fc.Args["offset"].(int))
 		},
 		nil,
 		ec.marshalNCategory2ᚕᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐCategoryᚄ,
@@ -1201,7 +1600,7 @@ func (ec *executionContext) _Query_categories(ctx context.Context, field graphql
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_categories(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_categories(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -1225,6 +1624,17 @@ func (ec *executionContext) fieldContext_Query_categories(_ context.Context, fie
 			return nil, fmt.Errorf("no field named %q was found under type Category", field.Name)
 		},
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_categories_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
 	return fc, nil
 }
 
@@ -1235,7 +1645,8 @@ func (ec *executionContext) _Query_tasks(ctx context.Context, field graphql.Coll
 		field,
 		ec.fieldContext_Query_tasks,
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().Tasks(ctx)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Tasks(ctx, fc.Args["limit"].(int), fc.Args["offset"].(int))
 		},
 		nil,
 		ec.marshalNTask2ᚕᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐTaskᚄ,
@@ -1244,7 +1655,7 @@ func (ec *executionContext) _Query_tasks(ctx context.Context, field graphql.Coll
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_tasks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -1260,8 +1671,10 @@ func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field gr
 				return ec.fieldContext_Task_description(ctx, field)
 			case "done":
 				return ec.fieldContext_Task_done(ctx, field)
-			case "idDaily":
-				return ec.fieldContext_Task_idDaily(ctx, field)
+			case "isDaily":
+				return ec.fieldContext_Task_isDaily(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_Task_isExpired(ctx, field)
 			case "lifetime":
 				return ec.fieldContext_Task_lifetime(ctx, field)
 			case "category":
@@ -1269,6 +1682,17 @@ func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field gr
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_tasks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -1280,7 +1704,8 @@ func (ec *executionContext) _Query_dailyTasks(ctx context.Context, field graphql
 		field,
 		ec.fieldContext_Query_dailyTasks,
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().DailyTasks(ctx)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().DailyTasks(ctx, fc.Args["limit"].(int), fc.Args["offset"].(int))
 		},
 		nil,
 		ec.marshalNTask2ᚕᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐTaskᚄ,
@@ -1289,7 +1714,7 @@ func (ec *executionContext) _Query_dailyTasks(ctx context.Context, field graphql
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_dailyTasks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_dailyTasks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -1305,8 +1730,10 @@ func (ec *executionContext) fieldContext_Query_dailyTasks(_ context.Context, fie
 				return ec.fieldContext_Task_description(ctx, field)
 			case "done":
 				return ec.fieldContext_Task_done(ctx, field)
-			case "idDaily":
-				return ec.fieldContext_Task_idDaily(ctx, field)
+			case "isDaily":
+				return ec.fieldContext_Task_isDaily(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_Task_isExpired(ctx, field)
 			case "lifetime":
 				return ec.fieldContext_Task_lifetime(ctx, field)
 			case "category":
@@ -1314,6 +1741,17 @@ func (ec *executionContext) fieldContext_Query_dailyTasks(_ context.Context, fie
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_dailyTasks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -1326,7 +1764,7 @@ func (ec *executionContext) _Query_pendingTasks(ctx context.Context, field graph
 		ec.fieldContext_Query_pendingTasks,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().PendingTasks(ctx, fc.Args["categoryId"].(*string))
+			return ec.Resolvers.Query().PendingTasks(ctx, fc.Args["categoryId"].(string), fc.Args["limit"].(int), fc.Args["offset"].(int))
 		},
 		nil,
 		ec.marshalNTask2ᚕᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐTaskᚄ,
@@ -1351,8 +1789,10 @@ func (ec *executionContext) fieldContext_Query_pendingTasks(ctx context.Context,
 				return ec.fieldContext_Task_description(ctx, field)
 			case "done":
 				return ec.fieldContext_Task_done(ctx, field)
-			case "idDaily":
-				return ec.fieldContext_Task_idDaily(ctx, field)
+			case "isDaily":
+				return ec.fieldContext_Task_isDaily(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_Task_isExpired(ctx, field)
 			case "lifetime":
 				return ec.fieldContext_Task_lifetime(ctx, field)
 			case "category":
@@ -1369,6 +1809,65 @@ func (ec *executionContext) fieldContext_Query_pendingTasks(ctx context.Context,
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_pendingTasks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_expiredTasks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_expiredTasks,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().ExpiredTasks(ctx, fc.Args["limit"].(int), fc.Args["offset"].(int))
+		},
+		nil,
+		ec.marshalNTask2ᚕᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐTaskᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_expiredTasks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Task_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Task_description(ctx, field)
+			case "done":
+				return ec.fieldContext_Task_done(ctx, field)
+			case "isDaily":
+				return ec.fieldContext_Task_isDaily(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_Task_isExpired(ctx, field)
+			case "lifetime":
+				return ec.fieldContext_Task_lifetime(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_expiredTasks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -1729,14 +2228,14 @@ func (ec *executionContext) fieldContext_Task_done(_ context.Context, field grap
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_idDaily(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_isDaily(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Task_idDaily,
+		ec.fieldContext_Task_isDaily,
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Task().IDDaily(ctx, obj)
+			return obj.IsDaily, nil
 		},
 		nil,
 		ec.marshalNBoolean2bool,
@@ -1745,12 +2244,41 @@ func (ec *executionContext) _Task_idDaily(ctx context.Context, field graphql.Col
 	)
 }
 
-func (ec *executionContext) fieldContext_Task_idDaily(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Task_isDaily(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Task",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_isExpired(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Task_isExpired,
+		func(ctx context.Context) (any, error) {
+			return obj.IsExpired, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Task_isExpired(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
 		},
@@ -3581,6 +4109,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateRoadmap":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateRoadmap(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateCategory":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateCategory(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateTask":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateTask(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "toggleTaskDone":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_toggleTaskDone(ctx, field)
@@ -3761,6 +4310,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "expiredTasks":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_expiredTasks(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -3902,42 +4473,16 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "idDaily":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Task_idDaily(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+		case "isDaily":
+			out.Values[i] = ec._Task_isDaily(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
+		case "isExpired":
+			out.Values[i] = ec._Task_isExpired(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "lifetime":
 			out.Values[i] = ec._Task_lifetime(ctx, field, obj)
 		case "category":
@@ -4396,6 +4941,22 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNNewCategory2githubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐNewCategory(ctx context.Context, v any) (model.NewCategory, error) {
 	res, err := ec.unmarshalInputNewCategory(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4655,24 +5216,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
-	return res
-}
-
-func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v any) (*string, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalID(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	_ = sel
-	_ = ctx
-	res := graphql.MarshalID(*v)
 	return res
 }
 

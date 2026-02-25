@@ -5,7 +5,8 @@ type Task struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
 	Done        bool    `json:"done"`
-	IsDaily       bool    `json:"isDaily"`
+	IsDaily     bool    `json:"isDaily"`
+	IsExpired 	bool `json:"isExpired"`
 	Lifetime    *string `json:"lifetime,omitempty"`
 	CategoryID  string  `json:"categoryId"`
 }

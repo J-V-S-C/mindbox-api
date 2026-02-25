@@ -26,11 +26,14 @@ func main() {
 		panic("Application PORT is required")
 	}
 
-	roadmapDB := database.NewRoadmap(db)
-	categoryDB := database.NewCategory(db)
+	roadmapDB := database.NewRoadmapRepository(db)
+	categoryDB := database.NewCategoryRepository(db)
+	taskDB := database.NewTaskRepository(db)
+	
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
 		RoadmapDB: roadmapDB,
 		CategoryDB: categoryDB,
+		TaskDB: taskDB,
 	}}))
 
 	srv.AddTransport(transport.Options{})

@@ -8,6 +8,7 @@ import "github.com/J-V-S-C/MindBox/internal/database"
 // here.
 
 type Resolver struct{
-	RoadmapDB *database.Roadmap
-	CategoryDB *database.Category
+	RoadmapDB *database.RoadmapRepository
+	CategoryDB *database.CategoryRepository
+	TaskDB *database.TaskRepository
 }

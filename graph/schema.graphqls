@@ -21,17 +21,19 @@ type Task {
   name: String!
   description: String
   done: Boolean!
-  idDaily: Boolean!
+  isDaily: Boolean!
+  isExpired: Boolean!
   lifetime: String
   category: Category!
 }
 
 type Query {
-  roadmaps: [Roadmap!]!
-  categories: [Category!]!
-  tasks: [Task!]!
-  dailyTasks: [Task!]!
-  pendingTasks(categoryId: ID): [Task!]!
+  roadmaps(limit: Int!, offset: Int!): [Roadmap!]!
+  categories(limit: Int!, offset: Int!): [Category!]!
+  tasks(limit: Int!, offset: Int!): [Task!]!
+  dailyTasks(limit: Int!, offset: Int!): [Task!]!
+  pendingTasks(categoryId: ID!, limit: Int!, offset: Int!): [Task!]!
+  expiredTasks(limit: Int!, offset: Int!): [Task!]!
 }
 
 input NewRoadmap {
@@ -59,6 +61,9 @@ type Mutation {
   createCategory(input: NewCategory!): Category!
   createTask(input: NewTask!): Task!
 
+  updateRoadmap(id: ID!, input: NewRoadmap!): Roadmap!
+  updateCategory(id: ID!, input: NewCategory!): Category!
+  updateTask(id: ID!, input: NewTask!): Task!
   toggleTaskDone(id: ID!): Task!
 
   deleteRoadmap(id: ID!): Boolean!

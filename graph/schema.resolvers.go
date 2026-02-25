@@ -7,119 +7,276 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/J-V-S-C/MindBox/graph/model"
 )
 
 // Roadmap is the resolver for the roadmap field.
 func (r *categoryResolver) Roadmap(ctx context.Context, obj *model.Category) (*model.Roadmap, error) {
-	panic(fmt.Errorf("not implemented: Roadmap - roadmap"))
+	category, err := r.CategoryDB.FindByID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := r.RoadmapDB.FindByID(category.RoadmapID)
+	if err != nil {
+		return nil, err
+	}
+
+	return ToRoadmapModel(res), nil
 }
 
 // Tasks is the resolver for the tasks field.
 func (r *categoryResolver) Tasks(ctx context.Context, obj *model.Category) ([]*model.Task, error) {
-	panic(fmt.Errorf("not implemented: Tasks - tasks"))
+	res, err := r.TaskDB.FindByCategoryID(obj.ID, 100, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []*model.Task
+	for _, task := range res {
+		tasks = append(tasks, ToTaskModel(task))
+	}
+	return tasks, nil
 }
 
 // CreateRoadmap is the resolver for the createRoadmap field.
 func (r *mutationResolver) CreateRoadmap(ctx context.Context, input model.NewRoadmap) (*model.Roadmap, error) {
-	var description string
+	description := ""
 	if input.Description != nil {
 		description = *input.Description
 	}
 
-	roadmap, err := r.RoadmapDB.Create(input.Name, description)
+	res, err := r.RoadmapDB.Create(input.Name, description)
 	if err != nil {
 		return nil, err
 	}
-	return &model.Roadmap{
-		ID:          roadmap.ID,
-		Name:        roadmap.Name,
-		Description: &roadmap.Description,
-	}, nil
+
+	return ToRoadmapModel(res), nil
 }
 
 // CreateCategory is the resolver for the createCategory field.
 func (r *mutationResolver) CreateCategory(ctx context.Context, input model.NewCategory) (*model.Category, error) {
-	panic(fmt.Errorf("not implemented: CreateCategory - createCategory"))
+	description := ""
+	if input.Description != nil {
+		description = *input.Description
+	}
+
+	res, err := r.CategoryDB.Create(input.Name, description, input.Lifetime, input.RoadmapID)
+	if err != nil {
+		return nil, err
+	}
+
+	return ToCategoryModel(res), nil
 }
 
 // CreateTask is the resolver for the createTask field.
 func (r *mutationResolver) CreateTask(ctx context.Context, input model.NewTask) (*model.Task, error) {
-	panic(fmt.Errorf("not implemented: CreateTask - createTask"))
+	description := ""
+	if input.Description != nil {
+		description = *input.Description
+	}
+	lifetime := ""
+	if input.Lifetime != nil {
+		lifetime = *input.Lifetime
+	}
+
+	res, err := r.TaskDB.Create(input.Name, description, input.IsDaily, lifetime, input.CategoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	return ToTaskModel(res), nil
+}
+
+// UpdateRoadmap is the resolver for the updateRoadmap field.
+func (r *mutationResolver) UpdateRoadmap(ctx context.Context, id string, input model.NewRoadmap) (*model.Roadmap, error) {
+	description := ""
+	if input.Description != nil {
+		description = *input.Description
+	}
+
+	res, err := r.RoadmapDB.Update(id, input.Name, description)
+	if err != nil {
+		return nil, err
+	}
+
+	return ToRoadmapModel(res), nil
+}
+
+// UpdateCategory is the resolver for the updateCategory field.
+func (r *mutationResolver) UpdateCategory(ctx context.Context, id string, input model.NewCategory) (*model.Category, error) {
+	description := ""
+	if input.Description != nil {
+		description = *input.Description
+	}
+
+	res, err := r.CategoryDB.Update(id, input.Name, description, input.Lifetime)
+	if err != nil {
+		return nil, err
+	}
+
+	return ToCategoryModel(res), nil
+}
+
+// UpdateTask is the resolver for the updateTask field.
+func (r *mutationResolver) UpdateTask(ctx context.Context, id string, input model.NewTask) (*model.Task, error) {
+	description := ""
+	if input.Description != nil {
+		description = *input.Description
+	}
+	lifetime := ""
+	if input.Lifetime != nil {
+		lifetime = *input.Lifetime
+	}
+
+	res, err := r.TaskDB.Update(id, input.Name, description, input.IsDaily, lifetime)
+	if err != nil {
+		return nil, err
+	}
+
+	return ToTaskModel(res), nil
 }
 
 // ToggleTaskDone is the resolver for the toggleTaskDone field.
 func (r *mutationResolver) ToggleTaskDone(ctx context.Context, id string) (*model.Task, error) {
-	panic(fmt.Errorf("not implemented: ToggleTaskDone - toggleTaskDone"))
+	res, err := r.TaskDB.ToggleDone(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return ToTaskModel(res), nil
 }
 
 // DeleteRoadmap is the resolver for the deleteRoadmap field.
 func (r *mutationResolver) DeleteRoadmap(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteRoadmap - deleteRoadmap"))
+	err := r.RoadmapDB.Delete(id)
+	return err == nil, err
 }
 
 // DeleteCategory is the resolver for the deleteCategory field.
 func (r *mutationResolver) DeleteCategory(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteCategory - deleteCategory"))
+	err := r.CategoryDB.Delete(id)
+	return err == nil, err
 }
 
 // DeleteTask is the resolver for the deleteTask field.
 func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteTask - deleteTask"))
+	err := r.TaskDB.Delete(id)
+	return err == nil, err
 }
 
 // Roadmaps is the resolver for the roadmaps field.
-func (r *queryResolver) Roadmaps(ctx context.Context) ([]*model.Roadmap, error) {
-	roadmaps, err := r.RoadmapDB.FindAll()
+func (r *queryResolver) Roadmaps(ctx context.Context, limit int, offset int) ([]*model.Roadmap, error) {
+	res, err := r.RoadmapDB.FindAll(limit, offset)
 	if err != nil {
 		return nil, err
 	}
-	var roadmapsModel []*model.Roadmap
-	for _, roadmap := range roadmaps {
-		roadmapsModel = append(roadmapsModel, &model.Roadmap{
-			ID:          roadmap.ID,
-			Name:        roadmap.Name,
-			Description: &roadmap.Description,
-		})
+
+	var roadmaps []*model.Roadmap
+	for _, roadmap := range res {
+		roadmaps = append(roadmaps, ToRoadmapModel(roadmap))
 	}
-	return roadmapsModel, nil
+	return roadmaps, nil
 }
 
 // Categories is the resolver for the categories field.
-func (r *queryResolver) Categories(ctx context.Context) ([]*model.Category, error) {
-	panic(fmt.Errorf("not implemented: Categories - categories"))
+func (r *queryResolver) Categories(ctx context.Context, limit int, offset int) ([]*model.Category, error) {
+	res, err := r.CategoryDB.FindAll(limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var categories []*model.Category
+	for _, category := range res {
+		categories = append(categories, ToCategoryModel(category))
+	}
+	return categories, nil
 }
 
 // Tasks is the resolver for the tasks field.
-func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
-	panic(fmt.Errorf("not implemented: Tasks - tasks"))
+func (r *queryResolver) Tasks(ctx context.Context, limit int, offset int) ([]*model.Task, error) {
+	res, err := r.TaskDB.FindAll(limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []*model.Task
+	for _, task := range res {
+		tasks = append(tasks, ToTaskModel(task))
+	}
+	return tasks, nil
 }
 
 // DailyTasks is the resolver for the dailyTasks field.
-func (r *queryResolver) DailyTasks(ctx context.Context) ([]*model.Task, error) {
-	panic(fmt.Errorf("not implemented: DailyTasks - dailyTasks"))
+func (r *queryResolver) DailyTasks(ctx context.Context, limit int, offset int) ([]*model.Task, error) {
+	res, err := r.TaskDB.FindDailyTasks(limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []*model.Task
+	for _, task := range res {
+		tasks = append(tasks, ToTaskModel(task))
+	}
+	return tasks, nil
 }
 
 // PendingTasks is the resolver for the pendingTasks field.
-func (r *queryResolver) PendingTasks(ctx context.Context, categoryID *string) ([]*model.Task, error) {
-	panic(fmt.Errorf("not implemented: PendingTasks - pendingTasks"))
+func (r *queryResolver) PendingTasks(ctx context.Context, categoryID string, limit int, offset int) ([]*model.Task, error) {
+	res, err := r.TaskDB.FindPendingByCategoryID(categoryID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []*model.Task
+	for _, task := range res {
+		tasks = append(tasks, ToTaskModel(task))
+	}
+	return tasks, nil
+}
+
+// ExpiredTasks is the resolver for the expiredTasks field.
+func (r *queryResolver) ExpiredTasks(ctx context.Context, limit int, offset int) ([]*model.Task, error) {
+	res, err := r.TaskDB.FindExpiredTasks(limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []*model.Task
+	for _, task := range res {
+		tasks = append(tasks, ToTaskModel(task))
+	}
+	return tasks, nil
 }
 
 // Categories is the resolver for the categories field.
 func (r *roadmapResolver) Categories(ctx context.Context, obj *model.Roadmap) ([]*model.Category, error) {
-	panic(fmt.Errorf("not implemented: Categories - categories"))
+	res, err := r.CategoryDB.FindByRoadmapID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var categories []*model.Category
+	for _, category := range res {
+		categories = append(categories, ToCategoryModel(category))
+	}
+	return categories, nil
 }
 
-// IDDaily is the resolver for the idDaily field.
-func (r *taskResolver) IDDaily(ctx context.Context, obj *model.Task) (bool, error) {
-	panic(fmt.Errorf("not implemented: IDDaily - idDaily"))
-}
-
-// Category is the resolver for the category field.
+// Category is the resolver for the category field (Nested in Task).
 func (r *taskResolver) Category(ctx context.Context, obj *model.Task) (*model.Category, error) {
-	panic(fmt.Errorf("not implemented: Category - category"))
+	task, err := r.TaskDB.FindByID(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := r.CategoryDB.FindByID(task.CategoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	return ToCategoryModel(res), nil
 }
 
 // Category returns CategoryResolver implementation.
@@ -137,8 +294,8 @@ func (r *Resolver) Roadmap() RoadmapResolver { return &roadmapResolver{r} }
 // Task returns TaskResolver implementation.
 func (r *Resolver) Task() TaskResolver { return &taskResolver{r} }
 
+type categoryResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type roadmapResolver struct{ *Resolver }
-type categoryResolver struct{ *Resolver }
 type taskResolver struct{ *Resolver }
