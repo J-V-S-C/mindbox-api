@@ -16,24 +16,39 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 
 	db := database.Connect()
 	defer db.Close()
 
 	port := os.Getenv("PORT")
-	if port == ""{
+	if port == "" {
 		panic("Application PORT is required")
 	}
 
 	roadmapDB := database.NewRoadmapRepository(db)
 	categoryDB := database.NewCategoryRepository(db)
 	taskDB := database.NewTaskRepository(db)
-	
+
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
-		RoadmapDB: roadmapDB,
+		RoadmapDB:  roadmapDB,
 		CategoryDB: categoryDB,
-		TaskDB: taskDB,
+		TaskDB:     taskDB,
 	}}))
 
 	srv.AddTransport(transport.Options{})
@@ -51,11 +66,13 @@ func main() {
 	http.Handle("/query", srv)
 
 	log.Printf("you should connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+
+	log.Fatal(http.ListenAndServe(":"+port, corsMiddleware(http.DefaultServeMux)))
 }
 
-func CheckError(err error){
-	if err != nil{
+func CheckError(err error) {
+	if err != nil {
 		panic(err)
 	}
 }
+
