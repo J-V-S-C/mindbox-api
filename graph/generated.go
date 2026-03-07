@@ -63,10 +63,13 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Categories   func(childComplexity int, limit int, offset int) int
+		Category     func(childComplexity int, id string) int
 		DailyTasks   func(childComplexity int, limit int, offset int) int
 		ExpiredTasks func(childComplexity int, limit int, offset int) int
 		PendingTasks func(childComplexity int, categoryID string, limit int, offset int) int
+		Roadmap      func(childComplexity int, id string) int
 		Roadmaps     func(childComplexity int, limit int, offset int) int
+		Task         func(childComplexity int, id string) int
 		Tasks        func(childComplexity int, limit int, offset int) int
 	}
 
@@ -106,6 +109,9 @@ type MutationResolver interface {
 	DeleteTask(ctx context.Context, id string) (bool, error)
 }
 type QueryResolver interface {
+	Roadmap(ctx context.Context, id string) (*model.Roadmap, error)
+	Category(ctx context.Context, id string) (*model.Category, error)
+	Task(ctx context.Context, id string) (*model.Task, error)
 	Roadmaps(ctx context.Context, limit int, offset int) ([]*model.Roadmap, error)
 	Categories(ctx context.Context, limit int, offset int) ([]*model.Category, error)
 	Tasks(ctx context.Context, limit int, offset int) ([]*model.Task, error)
@@ -293,6 +299,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Categories(childComplexity, args["limit"].(int), args["offset"].(int)), true
+	case "Query.category":
+		if e.ComplexityRoot.Query.Category == nil {
+			break
+		}
+
+		args, err := ec.field_Query_category_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Category(childComplexity, args["id"].(string)), true
 	case "Query.dailyTasks":
 		if e.ComplexityRoot.Query.DailyTasks == nil {
 			break
@@ -327,6 +344,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.PendingTasks(childComplexity, args["categoryId"].(string), args["limit"].(int), args["offset"].(int)), true
+	case "Query.roadmap":
+		if e.ComplexityRoot.Query.Roadmap == nil {
+			break
+		}
+
+		args, err := ec.field_Query_roadmap_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Roadmap(childComplexity, args["id"].(string)), true
 	case "Query.roadmaps":
 		if e.ComplexityRoot.Query.Roadmaps == nil {
 			break
@@ -338,6 +366,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Roadmaps(childComplexity, args["limit"].(int), args["offset"].(int)), true
+	case "Query.task":
+		if e.ComplexityRoot.Query.Task == nil {
+			break
+		}
+
+		args, err := ec.field_Query_task_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Task(childComplexity, args["id"].(string)), true
 	case "Query.tasks":
 		if e.ComplexityRoot.Query.Tasks == nil {
 			break
@@ -681,6 +720,17 @@ func (ec *executionContext) field_Query_categories_args(ctx context.Context, raw
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_category_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_dailyTasks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -734,6 +784,17 @@ func (ec *executionContext) field_Query_pendingTasks_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_roadmap_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_roadmaps_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -747,6 +808,17 @@ func (ec *executionContext) field_Query_roadmaps_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_task_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -1526,6 +1598,171 @@ func (ec *executionContext) fieldContext_Mutation_deleteTask(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_roadmap(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_roadmap,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Roadmap(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalORoadmap2ᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐRoadmap,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_roadmap(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Roadmap_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Roadmap_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Roadmap_description(ctx, field)
+			case "categories":
+				return ec.fieldContext_Roadmap_categories(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Roadmap", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_roadmap_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_category(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_category,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Category(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOCategory2ᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐCategory,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_category(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Category_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Category_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Category_description(ctx, field)
+			case "lifetime":
+				return ec.fieldContext_Category_lifetime(ctx, field)
+			case "roadmap":
+				return ec.fieldContext_Category_roadmap(ctx, field)
+			case "tasks":
+				return ec.fieldContext_Category_tasks(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Category", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_category_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_task(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_task,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Task(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOTask2ᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐTask,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Task_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Task_description(ctx, field)
+			case "done":
+				return ec.fieldContext_Task_done(ctx, field)
+			case "isDaily":
+				return ec.fieldContext_Task_isDaily(ctx, field)
+			case "isExpired":
+				return ec.fieldContext_Task_isExpired(ctx, field)
+			case "lifetime":
+				return ec.fieldContext_Task_lifetime(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_task_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4200,6 +4437,63 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "roadmap":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_roadmap(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "category":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_category(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "task":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_task(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "roadmaps":
 			field := field
 
@@ -5219,6 +5513,20 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) marshalOCategory2ᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐCategory(ctx context.Context, sel ast.SelectionSet, v *model.Category) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Category(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORoadmap2ᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐRoadmap(ctx context.Context, sel ast.SelectionSet, v *model.Roadmap) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Roadmap(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -5235,6 +5543,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOTask2ᚖgithubᚗcomᚋJᚑVᚑSᚑCᚋMindBoxᚋgraphᚋmodelᚐTask(ctx context.Context, sel ast.SelectionSet, v *model.Task) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Task(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

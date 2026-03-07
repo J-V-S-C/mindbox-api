@@ -166,6 +166,33 @@ func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (bool, err
 	return err == nil, err
 }
 
+// Roadmap is the resolver for the roadmap field.
+func (r *queryResolver) Roadmap(ctx context.Context, id string) (*model.Roadmap, error) {
+  res, err := r.RoadmapDB.FindByID(id)
+  if err != nil {
+    return nil, err
+  }
+  return ToRoadmapModel(res), nil
+}
+
+// Category is the resolver for the category field.
+func (r *queryResolver) Category(ctx context.Context, id string) (*model.Category, error) {
+  res, err := r.CategoryDB.FindByID(id)
+  if err != nil {
+    return nil, err
+  }
+  return ToCategoryModel(res), nil
+}
+
+// Task is the resolver for the task field.
+func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error) {
+  res, err := r.TaskDB.FindByID(id)
+  if err != nil {
+    return nil, err
+  }
+  return ToTaskModel(res), nil
+}
+
 // Roadmaps is the resolver for the roadmaps field.
 func (r *queryResolver) Roadmaps(ctx context.Context, limit int, offset int) ([]*model.Roadmap, error) {
 	res, err := r.RoadmapDB.FindAll(limit, offset)

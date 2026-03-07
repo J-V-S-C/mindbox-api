@@ -28,6 +28,9 @@ type Task {
 }
 
 type Query {
+  roadmap(id: ID!): Roadmap
+  category(id: ID!): Category
+  task(id: ID!): Task
   roadmaps(limit: Int!, offset: Int!): [Roadmap!]!
   categories(limit: Int!, offset: Int!): [Category!]!
   tasks(limit: Int!, offset: Int!): [Task!]!
