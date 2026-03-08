@@ -270,6 +270,7 @@ Environment Variables
 
 Create a .env file in the project root:
 
+```bash
 PORT=8080
 
 DB_HOST=db
@@ -277,18 +278,21 @@ DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=mindbox
+
+```
+
 Start the Services
+
+```bash
 docker-compose up --build
+```
 
 This will start:
 
-PostgreSQL database
-
-migration service
-
-GraphQL API server
-
-GraphQL Playground
+- PostgreSQL database
+- migration service
+- GraphQL API server
+- GraphQL Playground
 
 After startup the playground is available at:
 
@@ -299,8 +303,7 @@ GraphQL
 
 GraphQL was chosen to allow flexible querying of nested structures such as:
 
-roadmaps with categories
-
-categories with tasks
+- roadmaps with categories
+- categories with tasks
 
 This avoids multiple REST endpoints for hierarchical data.
