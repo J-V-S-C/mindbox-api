@@ -17,9 +17,7 @@ The project focuses on:
 
 MindBox organizes work in three levels:
 
-Roadmap
-└── Category
-└── Task
+Roadmap -> Category -> Task
 
 **Roadmaps** represent long-term goals.
 
@@ -86,28 +84,6 @@ Examples:
 Daily tasks are designed to reset every day.
 
 ---
-
-# Architecture
-
-The project follows a layered architecture separating transport, domain and persistence.
-
-cmd/
-└── server
-└── application entrypoint
-
-graph/
-├── GraphQL schema
-├── resolvers
-└── generated models
-
-internal/
-├── entities
-├── database
-├── config
-└── utils
-
-database/
-└── migrations
 
 ### Layer Responsibilities
 
@@ -281,6 +257,8 @@ mutation {
     done
   }
 }
+```
+
 Running the Project
 Requirements
 
@@ -315,7 +293,6 @@ GraphQL Playground
 After startup the playground is available at:
 
 http://localhost:PORT/
-```
 
 Design Considerations
 GraphQL
