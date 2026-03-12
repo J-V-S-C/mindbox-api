@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -17,17 +18,11 @@ import (
 )
 
 func corsMiddleware(next http.Handler) http.Handler {
-	allowedOrigins := map[string]bool{
-		"http://localhost:3000":                                             true,
-		"https://mindbox-frontend.vercel.app":                               true,
-		"https://mindbox-frontend-otwblm0v1-j-v-s-cs-projects.vercel.app": true,
-		}
-
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 
-		if allowedOrigins[origin] {
+		if strings.HasSuffix(origin, ".vercel.app") || origin == "http://localhost:3000" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 
@@ -87,4 +82,3 @@ func CheckError(err error) {
 		panic(err)
 	}
 }
-
