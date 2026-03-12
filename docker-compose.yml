@@ -9,7 +9,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 1s
-      timeout: 5s
+      timeout: 15s
       retries: 5
     ports:
       - "5432:5432"
@@ -58,7 +58,7 @@ services:
       - mindbox-net
 
   caddy:
-    image: caddy:latest
+    image: ghcr.io/caddy-dns/duckdns:latest
     restart: unless-stopped
     ports:
       - "80:80"
@@ -67,7 +67,8 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
-
+    networks:
+      - mindbox-net
 networks:
   mindbox-net:
     driver: bridge

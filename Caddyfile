@@ -1,3 +1,6 @@
-mindbox-api.duckdns.org {
-    reverse_proxy api:3333
+mindboxapi.duckdns.org {
+    tls {
+        dns duckdns fc074e71-c145-4489-8ea7-2a3d2257970f
+    }
+    reverse_proxy api:${PORT}
 }
